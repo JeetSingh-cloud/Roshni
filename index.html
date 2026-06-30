@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Roshni ❤️</title>
+    <style>
+        /* --- Design System & Base Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0a;
+            font-family: 'Georgia', serif;
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Canvas Background for Particles --- */
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- Screen Architecture --- */
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 2;
+            transition: opacity 1.2s ease-in-out, visibility 1.2s;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .screen.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* --- Typography & UI Elements --- */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 400;
+            line-height: 1.4;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 15px rgba(255, 182, 193, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+        }
+
+        .btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 192, 203, 0.6);
+            padding: 14px 36px;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.4s ease;
+            box-shadow: 0 0 10px rgba(255, 192, 203, 0.1);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 5;
+        }
+
+        .btn:hover, .btn:active {
+            background: rgba(255, 192, 203, 0.15);
+            box-shadow: 0 0 20px rgba(255, 192, 203, 0.4);
+            border-color: rgba(255, 192, 203, 0.9);
+            transform: scale(1.02);
+        }
+
+        /* --- Experience Screen & Slideshow Layout --- */
+        #experience-screen {
+            background: transparent;
+        }
+
+        .slideshow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .slide.current {
+            opacity: 1;
+        }
+
+        /* 1. Fullscreen Blurred Background Layer */
+        .slide-bg {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: calc(100% + 40px);
+            height: calc(100% + 40px);
+            background-size: cover;
+            background-position: center;
+            filter: blur(15px) brightness(0.4);
+            z-index: -1;
+            transform: scale(1.05);
+        }
+
+        /* 2. Sharp Medium-Sized Foreground Centered Image */
+        .slide-img {
+            position: relative;
+            z-index: 2;
+            
+            /* Responsive sizes optimized for mobile phones */
+            max-width: 85%;
+            max-height: 70%;
+            width: auto;
+            height: auto;
+            
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            
+            /* Soft scaling transition when loading */
+            transform: scale(0.96);
+            transition: transform 3.5s ease-out;
+        }
+
+        .slide.current .slide-img {
+            transform: scale(1);
+        }
+
+        /* Desktop Optimization to keep the image centered and medium sized */
+        @media (min-width: 769px) {
+            .slide-img {
+                max-width: 50%;
+                max-height: 75%;
+            }
+        }
+
+        /* --- Video Modal Experience --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .video-wrapper {
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            aspect-ratio: 16/9;
+            box-shadow: 0 0 40px rgba(255, 192, 203, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: -45px;
+            right: 0;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="starfield"></canvas>
+
+    <audio id="voice-audio" src="audio.mp3" preload="auto"></audio>
+
+    <div id="opening-screen" class="screen active">
+        <h1>Hey Roshni ❤️<br><br><span style="font-size: 1.1rem; opacity: 0.8; font-family: sans-serif; letter-spacing: 0;">Before you continue,please lower your mobile volume.I don't want to mess your lovely ear drums</span></h1>
+        <button class="btn" onclick="startExperience()">START</button>
+    </div>
+
+    <div id="experience-screen" class="screen">
+        <div class="slideshow-container" id="slideshow">
+            
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="7.jpeg" alt="Roshni" class="slide-img">
+            </div>
+
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="-4.jpeg" alt="Roshni" class="slide-img">
+            </div>
+
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="1.jpeg" alt="Roshni" class="slide-img">
+            </div>
+
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="3.jpeg" alt="Roshni" class="slide-img">
+            </div>
+
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="12.jpeg" alt="Roshni" class="slide-img">
+            </div>
+
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="1234.jpeg" alt="Roshni" class="slide-img">
+            </div>
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="pixel.jpeg" alt="Roshni" class="slide-img">
+            </div>
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="w.jpeg" alt="Roshni" class="slide-img">
+            </div>
+             <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="WhatsApp Image 2025-08-16 at 20.07.58_3ec6c7f1.jpg" alt="Roshni" class="slide-img">
+            </div>
+             <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="WhatsApp Image 2026-06-29 at 02.51.40.jpeg" alt="Roshni" class="slide-img">
+            </div>
+             <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="WhatsApp Image 2026-06-29 at 02.54.12.jpeg" alt="Roshni" class="slide-img">
+            </div>
+             <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="WhatsApp Image 2026-06-29 at 03.17.55.jpeg" alt="Roshni" class="slide-img">
+            </div>
+             <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="W.jpeg" alt="Roshni" class="slide-img">
+            </div>
+            <div class="slide">
+                <div class="slide-bg"></div>
+                <img src="pixel.jpeg" alt="Roshni" class="slide-img">
+            </div>
+ 
+
+        </div>
+    </div>
+
+    <div id="ending-screen" class="screen">
+        <h1>One last surprise for you ❤️</h1>
+        <button class="btn" onclick="openSurprise()">Open Your Surprise,If you made this farr then volume up karidiya, Happy Birthdaay once again</button>
+    </div>
+
+    <div id="video-modal" class="modal">
+        <div class="video-wrapper">
+            <button class="close-modal" onclick="closeSurprise()">✕ CLOSE & REPLAY SCENE</button>
+            <video id="surprise-video" src="Video Project 1.mp4" controls playsinline></video>
+        </div>
+    </div>
+
+    <script>
+        /* --- Ambient Star System Configuration --- */
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        let shootingStars = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+0        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Star {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.5 + 0.5;
+                this.alpha = Math.random();
+                this.speed = Math.random() * 0.02 + 0.01;
+            }
+            draw() {
+                ctx.shadowBlur = this.size * 2;
+                ctx.shadowColor = "rgba(255, 182, 193, 1)";
+                ctx.fillStyle = `rgba(255, 182, 193, ${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            update() {
+                this.alpha += this.speed;
+                if (this.alpha > 1 || this.alpha < 0) {
+                    this.speed = -this.speed;
+                }
+            }
+        }
+
+        class ShootingStar {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width * 0.5;
+                this.y = Math.random() * canvas.height * 0.4;
+                this.length = Math.random() * 80 + 40;
+                this.speedX = Math.random() * 4 + 2;
+                this.speedY = Math.random() * 2 + 1;
+                this.alpha = 1;
+            }
+            draw() {
+                ctx.shadowBlur = 0;
+                let gradient = ctx.createLinearGradient(this.x, this.y, this.x - this.length, this.y - (this.length * (this.speedY/this.speedX)));
+                gradient.addColorStop(0, `rgba(255, 192, 203, ${this.alpha})`);
+                gradient.addColorStop(1, 'rgba(255, 192, 203, 0)');
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.length, this.y - (this.length * (this.speedY/this.speedX)));
+                ctx.stroke();
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.alpha -= 0.01;
+                if (this.alpha <= 0 || this.x > canvas.width || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+        }
+
+        // Generate ambient structures
+        for(let i=0; i<80; i++) stars.push(new Star());
+        shootingStars.push(new ShootingStar());
+        setInterval(() => { if(shootingStars.length < 2) shootingStars.push(new ShootingStar()); }, 8000);
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => { star.update(); star.draw(); });
+            shootingStars.forEach((ss, index) => {
+                ss.update();
+                ss.draw();
+                if(ss.alpha <= 0) shootingStars.splice(index, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        /* --- Experience Logic & Synchronization --- */
+        const voiceAudio = document.getElementById('voice-audio');
+        const slides = document.querySelectorAll('.slide');
+        let currentSlideIndex = 0;
+        let slideInterval;
+
+        function startExperience() {
+            switchScreen('opening-screen', 'experience-screen');
+            
+            // Sync background layers dynamically based on foreground image source paths
+            slides.forEach(slide => {
+                const bgLayer = slide.querySelector('.slide-bg');
+                const imgLayer = slide.querySelector('.slide-img');
+                if(imgLayer && bgLayer) {
+                    const imgSrc = imgLayer.getAttribute('src');
+                    bgLayer.style.backgroundImage = `url('${imgSrc}')`;
+                }
+            });
+
+            voiceAudio.play().catch(error => {
+                console.log("Audio presentation execution held.", error);
+            });
+
+            // Start handling slideshow loop cycles (every 3 seconds)
+            showSlide(0);
+            slideInterval = setInterval(nextSlide, 3000);
+
+            // Transition gracefully to final surprise screen when sound track concludes
+            voiceAudio.onended = () => {
+                clearInterval(slideInterval);
+                switchScreen('experience-screen', 'ending-screen');
+            };
+        }
+
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('current'));
+            if(slides[index]) {
+                slides[index].classList.add('current');
+            }
+        }
+
+        function nextSlide() {
+            currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+            showSlide(currentSlideIndex);
+        }
+
+        function switchScreen(fromId, toId) {
+            document.getElementById(fromId).classList.remove('active');
+            setTimeout(() => {
+                document.getElementById(toId).classList.add('active');
+            }, 600);
+        }
+
+        /* --- Modal Control --- */
+        const modal = document.getElementById('video-modal');
+        const video = document.getElementById('surprise-video');
+
+        function openSurprise() {
+            modal.classList.add('active');
+            video.play();
+        }
+
+        function closeSurprise() {
+            video.pause();
+            video.currentTime = 0;
+            modal.classList.remove('active');
+            switchScreen('ending-screen', 'experience-screen');
+            startExperience(); // Instantly loops the sequence safely as a smart replay option
+        }
+    </script>
+</body>
+</html>
